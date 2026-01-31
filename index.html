@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reframe Cards</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #e8e8e8;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+      opacity: 0.7;
+    }
+
+    .card-container {
+      perspective: 1000px;
+      width: 100%;
+      max-width: 350px;
+      height: 450px;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.15s ease-out;
+      cursor: pointer;
+    }
+
+    .card.flipping {
+      transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+
+    .card.flipped {
+      /* Transform handled by JS for cursor tracking */
+    }
+
+    .card.pressed {
+      /* Scale handled by JS */
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .card-front {
+      background: linear-gradient(145deg, #2a2a4a, #1e1e3a);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.4),
+        0 0 30px rgba(255, 150, 150, 0.0);
+      animation: glow-front 4s ease-in-out infinite;
+    }
+
+    @keyframes glow-front {
+      0%, 100% { 
+        box-shadow: 
+          0 25px 50px rgba(0, 0, 0, 0.4),
+          0 0 30px rgba(255, 150, 150, 0.0);
+      }
+      50% { 
+        box-shadow: 
+          0 25px 50px rgba(0, 0, 0, 0.4),
+          0 0 40px rgba(255, 150, 150, 0.12);
+      }
+    }
+
+    .card.flipped .card-front {
+      animation: none;
+    }
+
+    .card-back {
+      background: linear-gradient(145deg, #2d4a3e, #1e3a2e);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+      transform: rotateY(180deg);
+    }
+
+    .card.flipped .card-back {
+      animation: glow-back 4s ease-in-out infinite;
+    }
+
+    @keyframes glow-back {
+      0%, 100% { 
+        box-shadow: 
+          0 25px 50px rgba(0, 0, 0, 0.4),
+          0 0 30px rgba(150, 255, 180, 0.0);
+      }
+      50% { 
+        box-shadow: 
+          0 25px 50px rgba(0, 0, 0, 0.4),
+          0 0 40px rgba(150, 255, 180, 0.12);
+      }
+    }
+
+    .card-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-bottom: 20px;
+    }
+
+    .card-front .card-label {
+      color: #ff6b6b;
+    }
+
+    .card-back .card-label {
+      color: #6bffb8;
+    }
+
+    .card-text {
+      font-size: 1.4rem;
+      line-height: 1.6;
+      font-style: italic;
+    }
+
+    .card-front .card-text {
+      color: #ffa0a0;
+    }
+
+    .card-back .card-text {
+      color: #a0ffd0;
+    }
+
+    .learning-badge {
+      margin-top: 30px;
+      padding: 8px 16px;
+      background: rgba(107, 255, 184, 0.1);
+      border-radius: 20px;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      color: #6bffb8;
+    }
+
+    .tap-hint {
+      position: absolute;
+      bottom: 30px;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: lowercase;
+      opacity: 0.35;
+      background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0.4) 0%,
+        rgba(255,255,255,0.8) 50%,
+        rgba(255,255,255,0.4) 100%
+      );
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: text-shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes text-shimmer {
+      0%, 100% { background-position: 200% center; }
+      50% { background-position: -200% center; }
+    }
+
+    .card-back .tap-hint {
+      opacity: 0.3;
+    }
+
+    .counter {
+      margin-top: 40px;
+      font-size: 0.8rem;
+      opacity: 0.3;
+      letter-spacing: 0.1em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Reframe</h1>
+  
+  <div class="card-container" id="card-container">
+    <div class="card" id="card">
+      <div class="card-face card-front">
+        <div class="card-label">The thought</div>
+        <div class="card-text" id="negative-thought"></div>
+        <div class="tap-hint">tap to reframe</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-label">Reframed</div>
+        <div class="card-text" id="reframed-thought"></div>
+        <div class="learning-badge">✦ learning ✦</div>
+        <div class="tap-hint">tap for next</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="counter" id="counter"></div>
+
+  <script>
+    const cards = [
+      {
+        negative: "I hate myself",
+        reframe: "I'm learning to treat myself with compassion and kindness"
+      },
+      {
+        negative: "I'm not good enough",
+        reframe: "I'm learning to recognize my worth and celebrate my growth"
+      },
+      {
+        negative: "I always fail",
+        reframe: "I'm learning that setbacks are part of my journey forward"
+      },
+      {
+        negative: "Nobody understands me",
+        reframe: "I'm learning to express myself more clearly and find my people"
+      },
+      {
+        negative: "I can't do anything right",
+        reframe: "I'm learning to appreciate my efforts and improve with practice"
+      },
+      {
+        negative: "I'm a burden to others",
+        reframe: "I'm learning to accept support as a gift, not a debt"
+      },
+      {
+        negative: "I'll never be happy",
+        reframe: "I'm learning to notice small moments of joy along the way"
+      },
+      {
+        negative: "I'm too broken to change",
+        reframe: "I'm learning that healing happens slowly, and I've already begun"
+      }
+    ];
+
+    let currentIndex = 0;
+    let isFlipped = false;
+    let isFlipping = false;
+    let isPressed = false;
+    
+    const card = document.getElementById('card');
+    const container = document.getElementById('card-container');
+    
+    // Cursor tracking state
+    let targetRotateX = 0;
+    let targetRotateY = 0;
+    let currentRotateX = 0;
+    let currentRotateY = 0;
+    let flexX = 0;
+    let flexY = 0;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
+    let velocity = { x: 0, y: 0 };
+
+    // Shuffle on load
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    shuffle(cards);
+
+    function updateCard() {
+      document.getElementById('negative-thought').textContent = `"${cards[currentIndex].negative}"`;
+      document.getElementById('reframed-thought').textContent = `"${cards[currentIndex].reframe}"`;
+      document.getElementById('counter').textContent = `${currentIndex + 1} of ${cards.length}`;
+    }
+
+    function flipCard() {
+      if (isFlipping) return;
+      
+      isFlipping = true;
+      card.classList.add('flipping');
+      
+      if (isFlipped) {
+        isFlipped = false;
+        // Add flex on flip
+        flexX = 15;
+        setTimeout(() => {
+          currentIndex = (currentIndex + 1) % cards.length;
+          updateCard();
+        }, 300);
+      } else {
+        isFlipped = true;
+        // Add flex on flip
+        flexX = -15;
+      }
+      
+      setTimeout(() => {
+        isFlipping = false;
+        card.classList.remove('flipping');
+      }, 600);
+      
+      updateTransform();
+    }
+
+    function updateTransform() {
+      // Smooth follow for cursor tracking
+      currentRotateX += (targetRotateX - currentRotateX) * 0.08;
+      currentRotateY += (targetRotateY - currentRotateY) * 0.08;
+      
+      // Decay flex (the softness/bend)
+      flexX *= 0.92;
+      flexY *= 0.92;
+      
+      const baseFlip = isFlipped ? 180 : 0;
+      const scale = isPressed ? 0.97 : 1;
+      
+      // Combine rotations with flex for that soft card feel
+      const totalRotateX = currentRotateX + flexY;
+      const totalRotateY = baseFlip + currentRotateY + flexX;
+      
+      card.style.transform = `
+        scale(${scale})
+        rotateX(${totalRotateX}deg)
+        rotateY(${totalRotateY}deg)
+      `;
+      
+      requestAnimationFrame(updateTransform);
+    }
+
+    // Mouse tracking
+    container.addEventListener('mousemove', (e) => {
+      const rect = container.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      const mouseX = e.clientX - centerX;
+      const mouseY = e.clientY - centerY;
+      
+      // Calculate velocity for flex effect
+      velocity.x = mouseX - lastMouseX;
+      velocity.y = mouseY - lastMouseY;
+      
+      // Add velocity to flex (softness on fast movement)
+      flexX += velocity.x * 0.03;
+      flexY += velocity.y * 0.03;
+      
+      // Clamp flex
+      flexX = Math.max(-15, Math.min(15, flexX));
+      flexY = Math.max(-15, Math.min(15, flexY));
+      
+      lastMouseX = mouseX;
+      lastMouseY = mouseY;
+      
+      // Subtle tilt toward cursor (max ~8 degrees)
+      targetRotateY = (mouseX / rect.width) * 12;
+      targetRotateX = -(mouseY / rect.height) * 8;
+    });
+
+    container.addEventListener('mouseleave', () => {
+      targetRotateX = 0;
+      targetRotateY = 0;
+    });
+
+    // Touch tracking
+    container.addEventListener('touchmove', (e) => {
+      const touch = e.touches[0];
+      const rect = container.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      const touchX = touch.clientX - centerX;
+      const touchY = touch.clientY - centerY;
+      
+      targetRotateY = (touchX / rect.width) * 12;
+      targetRotateX = -(touchY / rect.height) * 8;
+    });
+
+    // Press interactions
+    card.addEventListener('mousedown', () => {
+      isPressed = true;
+    });
+
+    card.addEventListener('touchstart', () => {
+      isPressed = true;
+    });
+
+    card.addEventListener('mouseup', () => {
+      isPressed = false;
+      flipCard();
+    });
+
+    card.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      isPressed = false;
+      targetRotateX = 0;
+      targetRotateY = 0;
+      flipCard();
+    });
+
+    card.addEventListener('mouseleave', () => {
+      isPressed = false;
+    });
+
+    // Start the animation loop
+    updateCard();
+    updateTransform();
+  </script>
+</body>
+</html>
